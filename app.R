@@ -99,12 +99,26 @@ ui <- dashboardPage(skin = "red",
 
 server <- function(input, output, session) {
 
-    dataset <- reactive(oecd)
-    output$boxplot = renderPlot({
-        ggplot(dataset(), aes_string(x = as.factor(input$LOCATION), y = input$Value)) +
-        geom_boxplot()
+    boxplotdat <- reactive({
+      choices <- unique(oecd$LOCATION)
+      selected <- isolate(input$LOCATION)    
+      updateSelectInput(session, "LOCATION", choices = choices, selected = selected)
+      oecd
     })
 
+    boxplotdata <- reactive({
+      x <- boxplotdat()
+      x[ x$LOCATION == input$LOCATION,,drop=FALSE]
+    })
+
+    output$boxplot <- renderPlot({
+    ggplot(data = boxplotdata(), aes(x = LOCATION, y = Value, fill = LOCATION)) +
+      geom_boxplot() +
+      theme_bw(base_size = 14) + xlab("") + ylab("Suicides") +
+      theme(axis.text=element_text(size=15, face = "bold", color = "black"),
+            axis.title=element_text(size=15, face = "bold", color = "black"),
+            strip.text = element_text(size=15, face = "bold", color = "black"))
+  })
     output$aggregateSuicidesEuropeValueBox <- renderValueBox({
         valueBox(
             value = sum_aggregate_data_oecd,
