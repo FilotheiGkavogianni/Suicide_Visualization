@@ -2,6 +2,7 @@ library(shiny)
 library(shinydashboard)
 library("readxl")
 library(DT)
+library(highcharter)
 
 
 oecd<- read.csv("suicide II OECD.csv.txt", header = TRUE)
@@ -42,8 +43,7 @@ ui <- dashboardPage(skin = "red",
             valueBoxOutput("aggregateSuicidesLithuaniaValueBox"),
             valueBoxOutput("aggregateSuicidesGreeceValueBox")
         ),
-        sidebarLayout(      
-    
+        sidebarLayout(
           # Define the sidebar with one input
           sidebarPanel(
             selectInput("Country", "Country:", 
@@ -56,7 +56,11 @@ ui <- dashboardPage(skin = "red",
             plotOutput("countryPlot")  
           )
     
-        )
+        ),
+        #h2(paste0("Goods")),
+        fluidRow( column( width = 10,h4(paste0("Suicides in Europe (2004-2014)"), align = 'center'), highchartOutput('timeseries') ),
+        ),
+
       ),
       tabItem("rawdata",
         fluidRow( 
@@ -119,6 +123,31 @@ server <- function(input, output, session) {
               ylab="Number of Suicides",
               xlab="Year")
     })
+
+    output$timeseries <-renderHighchart({
+         highchart() %>%
+            hc_chart(type = 'line') %>%
+            hc_series( list(name = 'Greece', data = oecd$Value[oecd$LOCATION=='GRC'] , color='blue', marker = list(symbol = 'circle') ),
+                       list(name = 'Deutsch', data = oecd$Value[oecd$LOCATION=='DEU'], color = 'black', dashStyle = 'shortDot', marker = list(symbol = 'triangle') ),
+                       list(name = 'France', data = oecd$Value[oecd$LOCATION=='FRA'], color = 'red', marker = list(symbol = 'circle') ),
+                       list(name = 'Belgium', data = oecd$Value[oecd$LOCATION=='BEL'], color = 'yellow', dashStyle = 'shortDot', marker = list(symbol = 'triangle'))
+            )%>%
+            hc_xAxis( categories = unique(oecd$TIME) ) %>%
+            hc_yAxis( title = list(text = "Suicides"),
+                      labels = list( format = "{value:,.0f}")  ) %>%
+            hc_plotOptions(column = list(
+               dataLabels = list(enabled = F),
+               #stacking = "normal",
+               enableMouseTracking = T ) 
+            )%>%
+            hc_tooltip(table = TRUE,
+                       sort = TRUE,
+                       pointFormat = paste0( '<br> <span style="color:{point.color}">\u25CF</span>',
+                                             " {series.name}: {point.y}"),
+                       headerFormat = '<span style="font-size: 13px">Year {point.key}</span>'
+            ) %>%
+            hc_legend( layout = 'vertical', align = 'right', verticalAlign = 'bottom', floating = T, x = 000, y = -020 )
+      })
 
     output$eurostat <- DT::renderDataTable(eurostat,
                                        rownames=F, options = list(pageLength = 10))
