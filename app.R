@@ -3,10 +3,10 @@ library(shinydashboard)
 library("readxl")
 library(DT)
 library(highcharter)
+library(ggplot2)
 
-
-oecd<- read.csv("suicide II OECD.csv.txt", header = TRUE)
-eurostat <- read_excel("suicide1.xls",col_names =TRUE, skip=2)
+# oecd<- read.csv("suicide II OECD.csv.txt", header = TRUE)
+# eurostat <- read_excel("suicide1.xls",col_names =TRUE, skip=2)
 
 
 aggregate_data_oecd <- aggregate(oecd$Value, by=list(LOCATION=oecd$LOCATION), FUN=sum)
@@ -57,8 +57,20 @@ ui <- dashboardPage(skin = "red",
           )
     
         ),
-        #h2(paste0("Goods")),
+
         fluidRow( column( width = 10,h4(paste0("Suicides in Europe (2004-2014)"), align = 'center'), highchartOutput('timeseries') ),
+        ),
+
+        sidebarLayout (
+          sidebarPanel(
+            selectInput("LOCATION", "Location:",
+                        choices=unique(oecd$LOCATION))
+          ),
+          
+          # Create a spot for the barplot
+          mainPanel(
+            plotOutput("boxplot")  
+          )
         ),
 
       ),
@@ -86,6 +98,12 @@ ui <- dashboardPage(skin = "red",
 )
 
 server <- function(input, output, session) {
+
+    dataset <- reactive(oecd)
+    output$boxplot = renderPlot({
+        ggplot(dataset(), aes_string(x = as.factor(input$LOCATION), y = input$Value)) +
+        geom_boxplot()
+    })
 
     output$aggregateSuicidesEuropeValueBox <- renderValueBox({
         valueBox(
