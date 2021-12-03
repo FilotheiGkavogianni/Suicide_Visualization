@@ -115,7 +115,9 @@ server <- function(input, output, session) {
 
     output$scatterplot <- renderPlot({
     ggplot(data = transformdata(), aes(x = TIME, y = Value, group = LOCATION)) +
-      geom_point()
+      geom_fontawesome(alias = "fa-tint",color = "red", size = 7, x = transformdata()$TIME,y = transformdata()$Value, group = transformdata()$LOCATION)+
+      xlab("Time")+
+      ylab("Suicides")
     })
 
 
