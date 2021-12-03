@@ -4,6 +4,7 @@ library("readxl")
 library(DT)
 library(highcharter)
 library(ggplot2)
+library(emojifont)
 
 # oecd<- read.csv("suicide II OECD.csv.txt", header = TRUE)
 # eurostat <- read_excel("suicide1.xls",col_names =TRUE, skip=2)
@@ -46,7 +47,7 @@ ui <- dashboardPage(skin = "red",
         sidebarLayout(
           # Define the sidebar with one input
           sidebarPanel(
-            selectInput("Country", "Country:", 
+            selectInput("Country", "Country(eurostat):", 
                         choices=colnames(barplot_shiny_data)),
             hr()
           ),
@@ -63,13 +64,14 @@ ui <- dashboardPage(skin = "red",
 
         sidebarLayout (
           sidebarPanel(
-            selectInput("LOCATION", "Location:",
+            selectInput("LOCATION", "Location(oecd):",
                         choices=unique(oecd$LOCATION))
           ),
           
           # Create a spot for the barplot
           mainPanel(
-            plotOutput("boxplot")  
+            plotOutput("boxplot"),
+            plotOutput("scatterplot")  
           )
         ),
 
@@ -99,26 +101,24 @@ ui <- dashboardPage(skin = "red",
 
 server <- function(input, output, session) {
 
-    boxplotdat <- reactive({
+    transformdat <- reactive({
       choices <- unique(oecd$LOCATION)
       selected <- isolate(input$LOCATION)    
       updateSelectInput(session, "LOCATION", choices = choices, selected = selected)
       oecd
     })
 
-    boxplotdata <- reactive({
-      x <- boxplotdat()
-      x[ x$LOCATION == input$LOCATION,,drop=FALSE]
+    transformdata <- reactive({
+      x <- transformdat()
+      x[x$LOCATION == input$LOCATION,,drop=FALSE]
     })
 
-    output$boxplot <- renderPlot({
-    ggplot(data = boxplotdata(), aes(x = LOCATION, y = Value, fill = LOCATION)) +
-      geom_boxplot() +
-      theme_bw(base_size = 14) + xlab("") + ylab("Suicides") +
-      theme(axis.text=element_text(size=15, face = "bold", color = "black"),
-            axis.title=element_text(size=15, face = "bold", color = "black"),
-            strip.text = element_text(size=15, face = "bold", color = "black"))
-  })
+    output$scatterplot <- renderPlot({
+    ggplot(data = transformdata(), aes(x = TIME, y = Value, group = LOCATION)) +
+      geom_point()
+    })
+
+
     output$aggregateSuicidesEuropeValueBox <- renderValueBox({
         valueBox(
             value = sum_aggregate_data_oecd,
@@ -184,7 +184,16 @@ server <- function(input, output, session) {
     output$eurostat <- DT::renderDataTable(eurostat,
                                        rownames=F, options = list(pageLength = 10))
     output$oecd <- DT::renderDataTable(oecd,
-                                       rownames=F, options = list(pageLength = 15))                                    
+                                       rownames=F, options = list(pageLength = 15))
+
+    output$boxplot <- renderPlot({
+    ggplot(data = transformdata(), aes(x = LOCATION, y = Value, fill = LOCATION)) +
+      geom_boxplot() +
+      theme_bw(base_size = 14) + xlab("") + ylab("Suicides") +
+      theme(axis.text=element_text(size=15, face = "bold", color = "black"),
+            axis.title=element_text(size=15, face = "bold", color = "black"),
+            strip.text = element_text(size=15, face = "bold", color = "black"))
+    })                                    
 
 }
 
