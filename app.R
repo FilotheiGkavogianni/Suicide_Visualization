@@ -49,17 +49,19 @@ ui <- dashboardPage(skin = "red",
           sidebarPanel(
             selectInput("Country", "Country(eurostat):", 
                         choices=colnames(barplot_shiny_data)),
-            hr()
           ),
           
           # Create a spot for the barplot
           mainPanel(
-            plotOutput("countryPlot")  
+            h3(paste0("Bar chart"), align = "center"),
+            plotOutput("countryPlot")
           )
     
         ),
 
-        fluidRow( column( width = 10,h4(paste0("Suicides in Europe (2004-2014)"), align = 'center'), highchartOutput('timeseries') ),
+        fluidRow( 
+          h3(paste0("Time series chart"), align = "center"),
+          column( width = 10,h4(paste0("Suicides in Europe (2004-2014) (per 1000000 person)"), align = 'center'), highchartOutput('timeseries') ),
         ),
 
         sidebarLayout (
@@ -70,7 +72,9 @@ ui <- dashboardPage(skin = "red",
           
           # Create a spot for the barplot
           mainPanel(
+            h3(paste0("Boxplot"), align = "center"),
             plotOutput("boxplot"),
+            h3(paste0("Scatterplot"), align = "center"),
             plotOutput("scatterplot")  
           )
         ),
@@ -113,14 +117,6 @@ server <- function(input, output, session) {
       x[x$LOCATION == input$LOCATION,,drop=FALSE]
     })
 
-    output$scatterplot <- renderPlot({
-    ggplot(data = transformdata(), aes(x = TIME, y = Value, group = LOCATION)) +
-      geom_fontawesome(alias = "fa-tint",color = "red", size = 7, x = transformdata()$TIME,y = transformdata()$Value, group = transformdata()$LOCATION)+
-      xlab("Time")+
-      ylab("Suicides")
-    })
-
-
     output$aggregateSuicidesEuropeValueBox <- renderValueBox({
         valueBox(
             value = sum_aggregate_data_oecd,
@@ -153,8 +149,8 @@ server <- function(input, output, session) {
       
       # Render a barplot
       barplot(barplot_shiny_data[,input$Country],
-        main=input$Country,
-              ylab="Number of Suicides",
+              main= paste0("Suicides per year in ",input$Country),
+              ylab="Suicides",
               xlab="Year")
     })
 
@@ -191,11 +187,23 @@ server <- function(input, output, session) {
     output$boxplot <- renderPlot({
     ggplot(data = transformdata(), aes(x = LOCATION, y = Value, fill = LOCATION)) +
       geom_boxplot() +
-      theme_bw(base_size = 14) + xlab("") + ylab("Suicides") +
+      theme_bw(base_size = 14) + xlab("") + ylab("Suicides") + ggtitle("Suicides per Location(per 1000000 person)") +
+      theme(axis.text=element_text(size=15, face = "bold", color = "black", hjust = 0.5),
+            plot.title=element_text(size=15, face = "bold", color = "black", hjust = 0.5),
+            strip.text = element_text(size=15, face = "bold", color = "black", hjust = 0.5))
+    })
+
+    output$scatterplot <- renderPlot({
+    ggplot(data = transformdata(), aes(x = TIME, y = Value, group = LOCATION)) +
+      geom_fontawesome(alias = "fa-tint",color = "red", size = 7, x = transformdata()$TIME,y = transformdata()$Value, group = transformdata()$LOCATION)+
       theme(axis.text=element_text(size=15, face = "bold", color = "black"),
-            axis.title=element_text(size=15, face = "bold", color = "black"),
-            strip.text = element_text(size=15, face = "bold", color = "black"))
-    })                                    
+            plot.title=element_text(size=15, face = "bold", color = "black", hjust = 0.5),
+            strip.text = element_text(size=15, face = "bold", color = "black"))+
+      xlab("Time")+
+      ylab("Suicides")+
+      ggtitle("Suicides through Time(per 1000000 person)")
+    })
+                                    
 
 }
 
